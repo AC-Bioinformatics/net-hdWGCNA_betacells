@@ -73,14 +73,15 @@ qc_plots(seu,
 # first 20 Harmony dimensions. Harmony only changes the embedding, not the expression.
 # The authors' UMAP is kept alongside as "umap_authors" for comparison.
 if (!"pca" %in% Reductions(seu)) {
-  # authors' variable genes are set in 1.read_GSE221156.R; only recalculate if missing
+  # Uses the authors' variable genes, but compute them if missing (e.g. if the Seurat object was saved before the variable features were added).
   if (length(VariableFeatures(seu)) == 0) {
-    seu <- FindVariableFeatures(seu, nfeatures = 2000, verbose = FALSE) # uses vst on raw counts by default
+    seu <- FindVariableFeatures(seu, nfeatures = 2000, verbose = FALSE) 
   }
   seu <- ScaleData(seu, verbose = FALSE)
-  seu <- RunPCA(seu, npcs = 100, verbose = FALSE)
+  seu <- RunPCA(seu, npcs = 100, verbose = FALSE) # 100 pcs like in the authors documentation for reproducibility
 }
 
+# Harmony integration to correct for batch effects in v2/v3 chemistry, sex and ancestry (self_reported_ethnicity). The authors' UMAP is kept alongside as "umap_authors" for comparison.
 if (!"harmony" %in% Reductions(seu)) {
   # Each round: soft-cluster cells in PCA space (pushing every cluster to mix the
   # batches), estimate each batch's offset within each cluster and remove it, then
