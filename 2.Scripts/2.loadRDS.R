@@ -82,8 +82,22 @@ if (!"pca" %in% Reductions(seu)) {
 }
 
 if (!"harmony" %in% Reductions(seu)) {
-  seu <- harmony::RunHarmony(seu, group.by.vars = c("sex", "chemistry", "self_reported_ethnicity"),
-                             verbose = FALSE)
+  # Each round: soft-cluster cells in PCA space (pushing every cluster to mix the
+  # batches), estimate each batch's offset within each cluster and remove it, then
+  # repeat on the corrected embedding until it stops changing (converged) or
+  # max_iter rounds. Harmony's clusters are internal - no cell labels are passed;
+  # group.by.vars only lists the technical/donor variables to correct, never
+  # biology like the authors' Clusters.
+  seu <- harmony::RunHarmony(
+    seu,
+    group.by.vars = c("sex", "chemistry", "self_reported_ethnicity"), # authors' covariates (ancestry = self-reported)
+    reduction.use = "pca",   # PCA of the authors' normalised values
+    dims.use = 1:100,        # all 100 PCs, as in the methods
+    theta = c(2, 2, 2),      # diversity penalty per variable (harmony default)
+    max_iter = 10,           # at most 10 rounds ("until convergence (10 iterations)")
+    early_stop = TRUE,       # stop as soon as it has converged
+    verbose = TRUE           # log each round and whether it converged
+  )
 }
 
 # plot pca and explained variance
