@@ -11,16 +11,18 @@ Data_dir = file.path(Root, '1.Data', 'GSE221156')
 Out_dir = file.path(Root, '3.Results')
 setwd(Root)
 
+# Load libraries
 library(Seurat)
 library(tidyverse)
 library(patchwork)
 library(WGCNA)
 library(hdWGCNA)
 
+# Read in seurat object with hdWGCNA modules and eigengenes (from 4.hdWGCNA_network.R)
 seu <- readRDS(file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))
 md  <- seu[[]]
 
-# Module eigengenes (no batch correction - all cells are v3), grey = unassigned genes
+# Module eigengenes all cells are v3 chemistry, grey = unassigned genes
 MEs  <- GetMEs(seu, harmonized = FALSE)
 mods <- setdiff(colnames(MEs), "grey")
 MEs  <- as.matrix(MEs[, mods])
