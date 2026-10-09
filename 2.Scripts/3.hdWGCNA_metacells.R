@@ -29,10 +29,10 @@ seu = readRDS(file.path(Data_dir, "GSE221156_beta_seurat.rds"))
 # Update to v5 object if seurat is v4 or older
 seu <- SeuratObject::UpdateSeuratObject(seu)
 
-# PCA on the authors' normalised values comes from 2.loadRDS.R (saved in the .rds) -
-# metacells need a reduction to find each cell's nearest neighbours
-if (!"pca" %in% Reductions(seu)) {
-  stop("No pca reduction - run 2.loadRDS.R first")
+# Harmony embedding (as in the authors' methods) comes from 2.loadRDS.R (saved in the
+# .rds) - metacells need a reduction to find each cell's nearest neighbours
+if (!"harmony" %in% Reductions(seu)) {
+  stop("No harmony reduction - run 2.loadRDS.R first")
 }
 
 # Non-diabetic vs T2D only - prediabetic donors are left out.
@@ -64,8 +64,8 @@ message("hdWGCNA genes: ", length(GetWGCNAGenes(seu)))
 seu <- MetacellsByGroups(
   seurat_obj = seu,
   group.by = "condition", # metacells never mix ND and T2D cells
-  reduction = 'pca', # PCA on the authors' normalised values; no batch correction needed
-  dims = 1:20, # same 20 PCs as the UMAP in 2.loadRDS.R
+  reduction = 'harmony', # Harmony embedding, as in the authors' methods
+  dims = 1:20, # same 20 Harmony dimensions as the UMAP (authors' and ours)
   k = 25, # nearest-neighbors parameter
   max_shared = 10, # maximum number of shared cells between two metacells
   ident.group = 'condition', # set the Idents of the metacell seurat object
