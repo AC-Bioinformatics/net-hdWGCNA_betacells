@@ -22,7 +22,7 @@ set.seed(24)
 
 # Soft power for the network: check 8.SoftPower_plot.pdf / 8.SoftPower_table.csv from
 # 3.hdWGCNA_metacells.R. NULL = hdWGCNA's choice (lowest power with SFT.R.sq >= 0.8)
-soft_power <- NULL
+soft_power <- 12 # first power with SFT.R.sq >= 0.8 (0.89; mean connectivity 23)
 
 # Load the object from 3.hdWGCNA_metacells.R (metacells, expression matrix, power table)
 seu = readRDS(file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))
