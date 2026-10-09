@@ -1,0 +1,21 @@
+# Data objects and downloaded raw data stay on the HPC
+# (GitHub rejects files over 100 MB)
+*.rds
+*.h5ad
+*.h5
+*.gz
+*.loom
+*.mtx
+
+# SLURM output
+*.log
+*.out
+*.err
+
+# R / editor / OS noise
+Rplots.pdf
+.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
+__pycache__/
