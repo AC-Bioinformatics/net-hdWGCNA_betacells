@@ -44,7 +44,10 @@ write_log("\nChemistry by condition:")
 write_obj(table(seu$chemistry, seu$condition))
 
 # Mitochondrial, ribosomal genes and hemoglobin genes
-seu[["percent.mt"]] <- PercentageFeatureSet(seu, pattern = "^MT-")
+# percent.mt is the authors' (from the h5ad); only compute it if missing
+if (!"percent.mt" %in% colnames(seu[[]])) {
+  seu[["percent.mt"]] <- PercentageFeatureSet(seu, pattern = "^MT-")
+}
 seu[["percent.ribo"]] <- PercentageFeatureSet(seu, pattern = "^RPL|^RPS")   
 seu[["percent.hb"]] <- PercentageFeatureSet(seu, pattern = "^HBA|^HBB|^HBZ")
 
