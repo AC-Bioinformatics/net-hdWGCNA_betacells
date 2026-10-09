@@ -1,5 +1,5 @@
 # hdWGCNA part 1: set up, build metacells and test soft powers on GSE221156 beta
-# cells, ND vs T2D only.
+# cells, ND vs T2D only, v3 chemistry only.
 # All cells are beta cells, so there's no cell type to select - the network is built
 # on every cell. Metacells average the authors' normalised values (X, the "data"
 # layer), so the network uses the authors' SoupX-corrected, log-normalised data.
@@ -35,11 +35,19 @@ if (!"pca" %in% Reductions(seu)) {
   stop("No pca reduction - run 2.loadRDS.R first")
 }
 
-# Non-diabetic vs T2D only - prediabetic donors are left out
-seu <- subset(seu, subset = condition %in% c("ND", "T2D"))
+# Non-diabetic vs T2D only - prediabetic donors are left out.
+# v3 chemistry only: v2 and v3 separate clearly (UMAP, metacells) and dominated the
+# soft-power test (positive slope, mean connectivity ~6,000 at power 1). v2 is also
+# unevenly split (31% of T2D vs 17% of ND cells), so chemistry and disease can't be
+# separated in a mixed network. The v2 cells can be used later to check whether the
+# v3 modules change in the same direction between ND and T2D.
+seu <- subset(seu, subset = condition %in% c("ND", "T2D") & chemistry == "v3")
 seu$condition <- droplevels(seu$condition)
 seu$donor <- droplevels(seu$donor)
 print(table(seu$condition))
+message("Donors per condition (v3): ",
+        paste(names(table(unique(seu[[c("donor", "condition")]])$condition)),
+              table(unique(seu[[c("donor", "condition")]])$condition), collapse = ", "))
 
 # Set up the Seurat object for WGCNA analysis
 # Requires a fraction of cells that a gene needs to be expressed in order to be included in the analysis.
