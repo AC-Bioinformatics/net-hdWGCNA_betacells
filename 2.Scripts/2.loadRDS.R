@@ -51,9 +51,9 @@ seu[["percent.hb"]] <- PercentageFeatureSet(seu, pattern = "^HBA|^HBB|^HBZ")
 # Violin plot of QC metrics for each condition (ND, PD, T2D)
 vln_plot <- VlnPlot(seu, features = c("nFeature_RNA", "nCount_RNA",
                                       "percent.mt", "percent.ribo", "percent.hb"),
-                    group.by = "condition", pt.size = 0.1, ncol = 3)
+                    group.by = "condition", pt.size = 0.1, ncol = 3, raster = TRUE)
 
-ggsave(file.path(Out_dir, "1.QC_violin_plot.png"), vln_plot, width = 10, height = 6)
+ggsave(file.path(Out_dir, "1.QC_violin_plot.pdf"), vln_plot, width = 10, height = 6)
 
 # QC metric distributions per condition - no filtering, just to look at them.
 # To filter later: mad_filters = list(nFeature_RNA = 5, percent.mt = 5) if needed
@@ -83,13 +83,13 @@ if (!"harmony" %in% Reductions(seu)) {
 }
 
 # plot pca and explained variance
-pca_plot <- DimPlot(seu, reduction = "pca", group.by = "donor") +
+pca_plot <- DimPlot(seu, reduction = "pca", group.by = "donor", raster = TRUE) +
   ggtitle("PCA by donor")
-ggsave(file.path(Out_dir, "3.PCA_plot.png"), pca_plot, width = 6, height = 4)
+ggsave(file.path(Out_dir, "3.PCA_plot.pdf"), pca_plot, width = 6, height = 4)
 
 # Elbow plot to determine the number of PCs to use for downstream analysis
 elbow_plot <- ElbowPlot(seu, ndims = 100)
-ggsave(file.path(Out_dir, "4.Elbow_plot.png"), elbow_plot, width = 6, height = 4)
+ggsave(file.path(Out_dir, "4.Elbow_plot.pdf"), elbow_plot, width = 6, height = 4)
 
 if (!"umap" %in% Reductions(seu)) {
   seu <- RunUMAP(seu, reduction = "harmony", dims = 1:20, verbose = FALSE) # 20 dims, as the authors
@@ -97,16 +97,16 @@ if (!"umap" %in% Reductions(seu)) {
 
 # plot umap coloured by condition (ND vs T2D) - ours next to the authors'
 nd_t2d <- colnames(seu)[seu$condition %in% c("ND", "T2D")]
-umap_plot <- DimPlot(seu, reduction = "umap", group.by = "condition", cells = nd_t2d) +
+umap_plot <- DimPlot(seu, reduction = "umap", group.by = "condition", raster = TRUE, cells = nd_t2d) +
   ggtitle("Our UMAP by condition") |
-  DimPlot(seu, reduction = "umap_authors", group.by = "condition", cells = nd_t2d) +
+  DimPlot(seu, reduction = "umap_authors", group.by = "condition", raster = TRUE, cells = nd_t2d) +
   ggtitle("Authors' UMAP by condition")
-ggsave(file.path(Out_dir, "5.UMAP_plot.png"), umap_plot, width = 12, height = 5)
+ggsave(file.path(Out_dir, "5.UMAP_plot.pdf"), umap_plot, width = 12, height = 5)
 
 # batch check - after Harmony, cells shouldn't separate by chemistry or donor
-batch_plot <- DimPlot(seu, reduction = "umap", group.by = "chemistry") +
-  DimPlot(seu, reduction = "umap", group.by = "donor") + NoLegend()
-ggsave(file.path(Out_dir, "6.UMAP_batch_check.png"), batch_plot, width = 12, height = 5)
+batch_plot <- DimPlot(seu, reduction = "umap", group.by = "chemistry", raster = TRUE) +
+  DimPlot(seu, reduction = "umap", group.by = "donor", raster = TRUE) + NoLegend()
+ggsave(file.path(Out_dir, "6.UMAP_batch_check.pdf"), batch_plot, width = 12, height = 5)
 
 # Save the Seurat object with QC metrics and PCA/UMAP embeddings to override the previous version
 saveRDS(seu, file.path(Data_dir, "GSE221156_beta_seurat.rds"))

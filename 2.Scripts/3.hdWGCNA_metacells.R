@@ -88,7 +88,7 @@ p5 <- DimPlotMetacells(seu, group.by='chemistry') + umap_theme() + ggtitle("Chem
 p6 <- DimPlotMetacells(seu, group.by='donor') + umap_theme() + NoLegend() + ggtitle("Donor (Harmony: chemistry)")
 
 metacell_plot <- (p1 | p2 | p3) / (p4 | p5 | p6)
-ggsave(file.path(Out_dir, "7.Metacell_UMAP_plot.png"), metacell_plot, width = 18, height = 10)
+ggsave(file.path(Out_dir, "7.Metacell_UMAP_plot.pdf"), metacell_plot, width = 18, height = 10)
 
 # Save for 4.hdWGCNA_network.R
 saveRDS(seu, file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))

@@ -43,7 +43,7 @@ plot_list <- PlotSoftPowers(seu)
 
 # assemble with patchwork
 soft_power_plot <- wrap_plots(plot_list, ncol=2)
-ggsave(file.path(Out_dir, "8.SoftPower_plot.png"), soft_power_plot, width = 10, height = 6)
+ggsave(file.path(Out_dir, "8.SoftPower_plot.pdf"), soft_power_plot, width = 10, height = 6)
 
 # Table of soft powers and their corresponding scale-free topology fit indices
 power_table <- GetPowerTable(seu)
@@ -55,7 +55,7 @@ seu <- ConstructNetwork(
   tom_name = 'Beta' # name of the topological overlap matrix written to disk
 )
 
-png(file.path(Out_dir, "9.Dendrogram_plot.png"), width = 10, height = 6, units = "in", res = 300)
+pdf(file.path(Out_dir, "9.Dendrogram_plot.pdf"), width = 10, height = 6)
 PlotDendrogram(seu, main='Beta hdWGCNA Dendrogram')
 dev.off()
 TOM <- GetTOM(seu)
