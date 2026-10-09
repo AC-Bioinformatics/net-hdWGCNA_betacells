@@ -1,6 +1,7 @@
-# hdWGCNA part 2: co-expression network on the ND vs T2D beta-cell metacells built by
-# 3.hdWGCNA_metacells.R. Module eigengenes are computed on the single cells using the
-# authors' normalised values (the "data" layer from 1.read_GSE221156.R).
+# hdWGCNA part 2: co-expression network on the ND vs T2D beta-cell metacells, using the
+# expression matrix and soft-power test from 3.hdWGCNA_metacells.R. Module eigengenes
+# are computed on the single cells using the authors' normalised values (the "data"
+# layer from 1.read_GSE221156.R).
 Root = '/home/alan.culligan/network'
 Data_dir = file.path(Root, '1.Data', 'GSE221156')
 Out_dir = file.path(Root, '3.Results')
@@ -19,38 +20,18 @@ theme_set(theme_cowplot())
 # Random seed for reproducibility
 set.seed(24)
 
-# Load the object with metacells from 3.hdWGCNA_metacells.R
+# Soft power for the network: check 8.SoftPower_plot.pdf / 8.SoftPower_table.csv from
+# 3.hdWGCNA_metacells.R. NULL = hdWGCNA's choice (lowest power with SFT.R.sq >= 0.8)
+soft_power <- NULL
+
+# Load the object from 3.hdWGCNA_metacells.R (metacells, expression matrix, power table)
 seu = readRDS(file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))
-
-# Set expression matrix to use for the analysis: the metacells' averaged authors' normalised values (X).
-# No group.by / group_name - there's only one cell type, so every metacell (ND and
-# T2D) goes into one network and modules can be compared between conditions.
-seu <- SetDatExpr(
-  seurat_obj = seu,
-  assay = 'RNA', # using RNA assay
-  layer = 'data' # authors' normalised values, averaged per metacell
-)
-
-# Test different soft powers:
-seu <- TestSoftPowers(
-  seurat_obj = seu,
-  networkType = 'signed' # you can also use "unsigned" or "signed hybrid"
-)
-
-# plot the results:
-plot_list <- PlotSoftPowers(seu)
-
-# assemble with patchwork
-soft_power_plot <- wrap_plots(plot_list, ncol=2)
-ggsave(file.path(Out_dir, "8.SoftPower_plot.pdf"), soft_power_plot, width = 10, height = 6)
-
-# Table of soft powers and their corresponding scale-free topology fit indices
-power_table <- GetPowerTable(seu)
-print(power_table)
+print(GetPowerTable(seu))
 
 # construct co-expression network:
 seu <- ConstructNetwork(
   seurat_obj = seu,
+  soft_power = soft_power, # NULL = chosen automatically from the power table
   tom_name = 'Beta' # name of the topological overlap matrix written to disk
 )
 

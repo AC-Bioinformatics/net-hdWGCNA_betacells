@@ -1,9 +1,10 @@
-# hdWGCNA part 1: set up and build metacells on GSE221156 beta cells, ND vs T2D only.
+# hdWGCNA part 1: set up, build metacells and test soft powers on GSE221156 beta
+# cells, ND vs T2D only.
 # All cells are beta cells, so there's no cell type to select - the network is built
 # on every cell. Metacells average the authors' normalised values (X, the "data"
 # layer), so the network uses the authors' SoupX-corrected, log-normalised data.
 # Saves the object so 4.hdWGCNA_network.R can build the network after the metacell
-# UMAP has been checked.
+# UMAP and soft-power plots have been checked.
 Root = '/home/alan.culligan/network'
 Data_dir = file.path(Root, '1.Data', 'GSE221156')
 Out_dir = file.path(Root, '3.Results')
@@ -81,6 +82,35 @@ seu <- RunUMAPMetacells(seu, reduction='pca', dims=1:15)
 
 metacell_plot <- DimPlotMetacells(seu, group.by='condition') + umap_theme() + ggtitle("Metacells by condition")
 ggsave(file.path(Out_dir, "7.Metacell_UMAP_plot.pdf"), metacell_plot, width = 7, height = 6)
+
+# Set expression matrix to use for the analysis: the metacells' averaged authors' normalised values (X).
+# No group.by / group_name - there's only one cell type, so every metacell (ND and
+# T2D) goes into one network and modules can be compared between conditions.
+seu <- SetDatExpr(
+  seurat_obj = seu,
+  assay = 'RNA', # using RNA assay
+  layer = 'data' # authors' normalised values, averaged per metacell
+)
+
+# Test different soft powers:
+seu <- TestSoftPowers(
+  seurat_obj = seu,
+  networkType = 'signed' # you can also use "unsigned" or "signed hybrid"
+)
+
+# plot the results:
+plot_list <- PlotSoftPowers(seu)
+
+# assemble with patchwork
+soft_power_plot <- wrap_plots(plot_list, ncol=2)
+ggsave(file.path(Out_dir, "8.SoftPower_plot.pdf"), soft_power_plot, width = 10, height = 6)
+
+# Table of soft powers and their corresponding scale-free topology fit indices
+power_table <- GetPowerTable(seu)
+print(power_table)
+write.csv(power_table, file.path(Out_dir, "8.SoftPower_table.csv"), row.names = FALSE)
+message("Lowest power with SFT.R.sq >= 0.8: ",
+        min(power_table$Power[power_table$SFT.R.sq >= 0.8], na.rm = TRUE))
 
 # Save for 4.hdWGCNA_network.R
 saveRDS(seu, file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))
