@@ -48,17 +48,17 @@ seu[["percent.mt"]] <- PercentageFeatureSet(seu, pattern = "^MT-")
 seu[["percent.ribo"]] <- PercentageFeatureSet(seu, pattern = "^RPL|^RPS")   
 seu[["percent.hb"]] <- PercentageFeatureSet(seu, pattern = "^HBA|^HBB|^HBZ")
 
-# Violing plot of QC metrics for each donor sample
+# Violin plot of QC metrics for each condition (ND, PD, T2D)
 vln_plot <- VlnPlot(seu, features = c("nFeature_RNA", "nCount_RNA",
                                       "percent.mt", "percent.ribo", "percent.hb"),
-                    group.by = "donor", pt.size = 0.1, ncol = 3)
+                    group.by = "condition", pt.size = 0.1, ncol = 3)
 
 ggsave(file.path(Out_dir, "1.QC_violin_plot.png"), vln_plot, width = 10, height = 6)
 
-# QC metric distributions per donor - no filtering, just to look at them.
+# QC metric distributions per condition - no filtering, just to look at them.
 # To filter later: mad_filters = list(nFeature_RNA = 5, percent.mt = 5) if needed
 qc_plots(seu,
-         group_by = "donor",
+         group_by = "condition",
          mad_filters = list(),
          out_dir = Out_dir,
          pdf_name = "2.QC_histograms.pdf",
