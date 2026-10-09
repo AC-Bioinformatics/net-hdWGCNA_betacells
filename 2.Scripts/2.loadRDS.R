@@ -1,5 +1,5 @@
 ### Read the seurat object and file structure
-Root = '/Users/alan/Desktop/Bioinformatics/net-hdWGCNA_betacells'
+Root = '/home/alan.culligan/network'
 Data_dir = file.path(Root, '1.Data', 'GSE221156')
 Out_dir = file.path(Root, '3.Results')
 setwd(Root)

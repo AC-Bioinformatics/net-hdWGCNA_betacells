@@ -3,7 +3,7 @@
 # PCA/Harmony and the module eigengenes use the authors' normalised values (the
 # "data" layer from 1.read_GSE221156.R); metacells are built from raw counts and
 # re-normalised, as standard.
-Root = '/Users/alan/Desktop/Bioinformatics/net-hdWGCNA_betacells'
+Root = '/home/alan.culligan/network'
 Data_dir = file.path(Root, '1.Data', 'GSE221156')
 Out_dir = file.path(Root, '3.Results')
 setwd(Root)
