@@ -67,10 +67,10 @@ qc_plots(seu,
          pdf_name = "2.QC_histograms.pdf",
          log_fun = write_log)
 
-# Our own PCA / Harmony / UMAP on the authors' normalised values (data layer), following
-# their beta-cell reintegration: their variable genes -> 100 PCs -> Harmony on sex,
-# chemistry and ancestry -> UMAP from the first 20 Harmony dimensions.
-# Their UMAP is kept alongside as "umap_authors" for comparison.
+# Our own PCA / UMAP on the authors' normalised values (data layer): their variable
+# genes -> 100 PCs -> UMAP from the first 20 PCs. No Harmony: it only changes the
+# embedding (not the expression used by hdWGCNA), and the authors' Harmony-integrated
+# UMAP is kept alongside as "umap_authors" for comparison.
 if (!"pca" %in% Reductions(seu)) {
   # authors' variable genes are set in 1.read_GSE221156.R; only recalculate if missing
   if (length(VariableFeatures(seu)) == 0) {
@@ -78,11 +78,6 @@ if (!"pca" %in% Reductions(seu)) {
   }
   seu <- ScaleData(seu, verbose = FALSE)
   seu <- RunPCA(seu, npcs = 100, verbose = FALSE)
-}
-
-if (!"harmony" %in% Reductions(seu)) {
-  seu <- harmony::RunHarmony(seu, group.by.vars = c("sex", "chemistry", "self_reported_ethnicity"),
-                             verbose = FALSE)
 }
 
 # plot pca and explained variance
@@ -95,7 +90,7 @@ elbow_plot <- ElbowPlot(seu, ndims = 100)
 ggsave(file.path(Out_dir, "4.Elbow_plot.pdf"), elbow_plot, width = 6, height = 4)
 
 if (!"umap" %in% Reductions(seu)) {
-  seu <- RunUMAP(seu, reduction = "harmony", dims = 1:20, verbose = FALSE) # 20 dims, as the authors
+  seu <- RunUMAP(seu, reduction = "pca", dims = 1:20, verbose = FALSE) # 20 dims, as the authors
 }
 
 # plot umap coloured by condition (ND vs T2D) - ours next to the authors'
@@ -106,7 +101,7 @@ umap_plot <- DimPlot(seu, reduction = "umap", group.by = "condition", raster = T
   ggtitle("Authors' UMAP by condition")
 ggsave(file.path(Out_dir, "5.UMAP_plot.pdf"), umap_plot, width = 12, height = 5)
 
-# batch check - after Harmony, cells shouldn't separate by chemistry or donor
+# batch check - without Harmony, expect some separation by chemistry and donor
 batch_plot <- DimPlot(seu, reduction = "umap", group.by = "chemistry", raster = TRUE) +
   DimPlot(seu, reduction = "umap", group.by = "donor", raster = TRUE) + NoLegend()
 ggsave(file.path(Out_dir, "6.UMAP_batch_check.pdf"), batch_plot, width = 12, height = 5)

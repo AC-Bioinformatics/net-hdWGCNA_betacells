@@ -14,7 +14,6 @@ library(cowplot)
 library(patchwork)
 library(WGCNA)
 library(hdWGCNA)
-library(harmony)
 theme_set(theme_cowplot())
 
 # Random seed for reproducibility
@@ -23,13 +22,13 @@ set.seed(24)
 # Load the object with metacells from 3.hdWGCNA_metacells.R
 seu = readRDS(file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))
 
-# Set expression matrix to use for the analysis: the normalised metacells.
+# Set expression matrix to use for the analysis: the metacells' averaged authors' normalised values (X).
 # No group.by / group_name - there's only one cell type, so every metacell (ND and
 # T2D) goes into one network and modules can be compared between conditions.
 seu <- SetDatExpr(
   seurat_obj = seu,
   assay = 'RNA', # using RNA assay
-  layer = 'data' # normalised metacell expression
+  layer = 'data' # authors' normalised values, averaged per metacell
 )
 
 # Test different soft powers:
@@ -63,17 +62,11 @@ TOM <- GetTOM(seu)
 modules <- GetModules(seu)
 print(table(modules$module))
 
-# ModuleEigengenes(group.by.vars = ...) needs ScaleData to have been run on the object
-if (!any(grepl("ScaleData", names(seu@commands)))) {
-  seu <- ScaleData(seu, features = VariableFeatures(seu), verbose = FALSE)
-}
-
-# compute all MEs in the full single-cell dataset (uses the authors' "data" layer),
-# harmonised by chemistry - not donor, since each donor has only one condition and
-# correcting donor would also remove the ND vs T2D difference
+# compute all MEs in the full single-cell dataset (uses the authors' "data" layer).
+# No batch correction here: chemistry goes in as a covariate when MEs are compared
+# between ND and T2D (per donor), e.g. ME ~ condition + chemistry
 seu <- ModuleEigengenes(
-  seurat_obj = seu,
-  group.by.vars = "chemistry"
+  seurat_obj = seu
 )
 
 saveRDS(seu, file.path(Data_dir, "GSE221156_beta_hdwgcna.rds"))
