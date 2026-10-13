@@ -7,7 +7,11 @@
 *.loom
 *.mtx
 *.rda
-1.Data/
+# 1.Data: only the folder layout is tracked (data downloaded by 0.Download_GSE221156.R)
+1.Data/*
+!1.Data/GSE221156/
+1.Data/GSE221156/*
+!1.Data/GSE221156/.gitkeep
 TOM/
 
 # SLURM output
