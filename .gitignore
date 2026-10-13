@@ -6,6 +6,9 @@
 *.gz
 *.loom
 *.mtx
+*.rda
+1.Data/
+TOM/
 
 # SLURM output
 *.log
@@ -19,3 +22,6 @@ Rplots.pdf
 .Rproj.user/
 .DS_Store
 __pycache__/
+
+# Exploratory / test outputs
+Supplementary/
