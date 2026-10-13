@@ -207,3 +207,281 @@ qc_plots <- function(seu,
     vln_post = vln_post
   ))
 }
+
+
+### ORA helpers for 6.module_pathways.R: plots and text summary for a clusterProfiler
+### enricher() result. Requires clusterProfiler and enrichplot to be loaded.
+#
+# Usage:
+#   source(file.path(Root, "2.Scripts", "Functions", "qc_plots.R"))
+#   save_plot(p, file.path(plots_dir, "name_dotplot"))           # -> .png + .pdf
+#   edo <- ora_plots(ora, analysis_name, plots_dir, fold_change = kme_vector)
+#   write_ora_summary(txt_path, ora.res, params = list(...), ...)
+
+# Write one plot as .png and .pdf (file_stem = path without extension). A plot that errors
+# while being built or drawn (e.g. emapplot / treeplot with too few terms) is skipped: its
+# device is closed and any partial files are removed.
+save_plot <- function(expr, file_stem,
+                      png_width = 3200, png_height = 2400, png_res = 300,
+                      pdf_width = 12,   pdf_height = 9) {
+  files <- paste0(file_stem, c(".png", ".pdf"))
+  n_dev <- length(dev.list())
+  ok <- tryCatch({
+    p <- expr
+
+    png(files[1], width = png_width, height = png_height, res = png_res, type = "cairo")
+    print(p)
+    dev.off()
+
+    pdf(files[2], width = pdf_width, height = pdf_height)
+    print(p)
+    dev.off()
+    TRUE
+  }, error = function(e) {
+    while (length(dev.list()) > n_dev) dev.off()
+    unlink(files)
+    message("Skipped: ", basename(file_stem), " (", conditionMessage(e), ")")
+    FALSE
+  })
+
+  if (ok) message("Saved: ", basename(file_stem), "  (.png + .pdf)")
+  invisible(ok)
+}
+
+# Standard ORA plots for an enrichResult: barplot, dotplot, emapplot, treeplot and cnetplot
+# (genes coloured by fold_change, e.g. kME; NULL = uncoloured). subtitle is added to the
+# barplot, dotplot and cnetplot. Returns the pairwise_termsim() object (NULL if it couldn't
+# be built).
+ora_plots <- function(ora, analysis_name, plots_dir, show_category = 20, fold_change = NULL,
+                      subtitle = NULL) {
+  stem <- function(x) file.path(plots_dir, paste0(analysis_name, "_", x))
+  n_terms <- nrow(as.data.frame(ora))
+  edo <- NULL
+
+  # Suppress known harmless deprecation warnings from enrichplot
+  withCallingHandlers(
+    {
+      save_plot(
+        barplot(ora, showCategory = show_category) +
+          labs(title = paste0(analysis_name, " - barplot"), subtitle = subtitle) +
+          theme(axis.text.y = element_text(size = 6)),
+        stem("barplot")
+      )
+
+      save_plot(
+        dotplot(ora, showCategory = show_category) +
+          labs(title = paste0(analysis_name, " - dotplot"), subtitle = subtitle) +
+          theme(axis.text.y = element_text(size = 6)),
+        stem("dotplot")
+      )
+
+      # Term-similarity plots need at least two terms
+      if (n_terms >= 2) {
+        edo <- tryCatch(pairwise_termsim(ora), error = function(e) NULL)
+      }
+      if (!is.null(edo)) {
+        save_plot(emapplot(edo), stem("emapplot"))
+        save_plot(treeplot(edo, cluster.params = list(n = min(5, n_terms))), stem("treeplot"),
+                  png_width = 4200, pdf_width = 16)
+      }
+
+      save_plot(
+        cnetplot(ora, showCategory = 5, foldChange = fold_change) +
+          labs(title = paste0(analysis_name, " - gene-concept network",
+                              if (!is.null(fold_change)) " (genes coloured by kME)"),
+               subtitle = subtitle),
+        stem("cnetplot")
+      )
+    },
+    warning = function(w) {
+      if (grepl("size|linewidth|by = .Count", conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+  invisible(edo)
+}
+
+# Text summary of an ORA run.
+# ora.res      : as.data.frame() of the significant enrichResult
+# nominal.res  : optional as.data.frame() of the nominal-p terms, listed after the significant ones
+# params       : named list printed in the PARAMETERS block, e.g. list(Module = "purple")
+# n_background : universe size;  input_genes: genes tested (first top_genes listed)
+# n_tested     : number of gene sets tested (all terms, before the cut-off)
+# files        : named list of output paths printed at the end
+write_ora_summary <- function(txt_path, ora.res, params, n_background, input_genes,
+                              n_tested = NA, files = list(), top_genes = 10,
+                              nominal.res = NULL, nominal_label = "nominal p < 0.05") {
+  rule <- function(ch) cat(strrep(ch, 80), "\n", sep = "")
+  print_terms <- function(df) {
+    for (i in seq_len(nrow(df))) {
+      cat(sprintf("[%2d] %s\n", i, df$ID[i]))
+      cat(sprintf("     GeneRatio : %s\n",   df$GeneRatio[i]))
+      cat(sprintf("     BgRatio   : %s\n",   df$BgRatio[i]))
+      cat(sprintf("     p-value   : %.4e\n", df$pvalue[i]))
+      cat(sprintf("     p.adjust  : %.4e\n", df$p.adjust[i]))
+      cat(sprintf("     q.value   : %.4e\n", df$qvalue[i]))
+      cat(sprintf("     Count     : %d\n",   df$Count[i]))
+      cat(sprintf("     Genes     : %s\n\n", df$geneID[i]))
+    }
+  }
+
+  sink(txt_path)
+  on.exit(sink(), add = TRUE)
+  rule("=")
+  cat("ORA ANALYSIS SUMMARY\n")
+  rule("=")
+  cat(sprintf("%-16s: %s\n", "Date", format(Sys.time(), "%Y-%m-%d %H:%M:%S")))
+  rule("-")
+  cat("PARAMETERS\n")
+  rule("-")
+  for (nm in names(params)) cat(sprintf("%-16s: %s\n", nm, paste(params[[nm]], collapse = ", ")))
+  rule("-")
+  cat("GENE LISTS\n")
+  rule("-")
+  cat(sprintf("%-16s: %d\n", "Background genes", n_background))
+  cat(sprintf("%-16s: %d\n", "Input genes", length(input_genes)))
+  cat(sprintf("%-16s: %s\n", paste("Top", top_genes), paste(head(input_genes, top_genes), collapse = ", ")))
+  rule("-")
+  cat("RESULTS OVERVIEW\n")
+  rule("-")
+  cat("Gene sets tested :", n_tested, "\n")
+  cat("Enriched pathways:", nrow(ora.res), "\n")
+  if (!is.null(nominal.res)) cat(sprintf("Terms with %s: %d\n", nominal_label, nrow(nominal.res)))
+
+  if (nrow(ora.res) > 0) {
+    cat("\n--- TOP 10 ENRICHED PATHWAYS (by p.adjust) ---\n\n")
+    print_terms(head(ora.res[order(ora.res$p.adjust), ], 10))
+
+    cat("--- FULL RESULTS TABLE ---\n\n")
+    print(ora.res[, c("ID", "GeneRatio", "BgRatio", "pvalue", "p.adjust", "qvalue", "Count")],
+          row.names = FALSE)
+  }
+
+  if (!is.null(nominal.res) && nrow(nominal.res) > 0) {
+    cat(sprintf("\n--- TOP 20 TERMS WITH %s (by p-value) ---\n\n", toupper(nominal_label)))
+    print_terms(head(nominal.res[order(nominal.res$pvalue), ], 20))
+  }
+
+  cat("\n")
+  rule("=")
+  cat("Output files\n")
+  rule("=")
+  for (nm in names(files)) cat(sprintf("%-12s: %s\n", nm, files[[nm]]))
+  invisible(txt_path)
+}
+
+
+### write_network_summary(): text summary of one module network (7.network_visualisation.R)
+#
+# Usage:
+#   write_network_summary(txt_path, hub_tab, params = list(...), n_edges, n_pairs, files = list(...))
+#
+# hub_tab : one row per module gene with kME, kWithin, kWithin_scaled, kOut, kDiff, degree,
+#           betweenness, hub and hallmark columns, ordered by kME
+# params  : named list printed in the PARAMETERS block
+# n_edges : edges kept in the thresholded network;  n_pairs: all within-module gene pairs
+# files   : named list of output paths printed at the end
+write_network_summary <- function(txt_path, hub_tab, params, n_edges, n_pairs,
+                                  files = list(), top_n = 20) {
+  rule <- function(ch) cat(strrep(ch, 80), "\n", sep = "")
+
+  sink(txt_path)
+  on.exit(sink(), add = TRUE)
+  rule("=")
+  cat("MODULE NETWORK SUMMARY\n")
+  rule("=")
+  cat(sprintf("%-20s: %s\n", "Date", format(Sys.time(), "%Y-%m-%d %H:%M:%S")))
+  rule("-")
+  cat("PARAMETERS\n")
+  rule("-")
+  for (nm in names(params)) cat(sprintf("%-20s: %s\n", nm, paste(params[[nm]], collapse = ", ")))
+  rule("-")
+  cat("NETWORK\n")
+  rule("-")
+  cat(sprintf("%-20s: %d\n", "Genes", nrow(hub_tab)))
+  cat(sprintf("%-20s: %d of %d (density %.3f)\n", "Edges kept", n_edges, n_pairs, n_edges / n_pairs))
+  cat(sprintf("%-20s: %.1f (median %d)\n", "Mean degree", mean(hub_tab$degree), as.integer(median(hub_tab$degree))))
+  cat(sprintf("%-20s: %d\n", "Genes without edges", sum(hub_tab$degree == 0)))
+  cat(sprintf("%-20s: %.2f\n", "cor(kME, kWithin)", cor(hub_tab$kME, hub_tab$kWithin)))
+  cat(sprintf("%-20s: %.2f (Spearman)\n", "cor(kME, degree)", cor(hub_tab$kME, hub_tab$degree, method = "spearman")))
+  rule("-")
+  cat(sprintf("TOP %d GENES BY kME\n", top_n))
+  rule("-")
+  cols <- c("gene_name", "kME", "kWithin_scaled", "kOut", "kDiff", "degree", "betweenness", "hub", "hallmark")
+  top <- head(hub_tab[, cols], top_n)
+  top[, c("kME", "kWithin_scaled", "kOut", "kDiff", "betweenness")] <-
+    lapply(top[, c("kME", "kWithin_scaled", "kOut", "kDiff", "betweenness")], signif, 3)
+  print(top, row.names = FALSE)
+  rule("-")
+  cat(sprintf("TOP %d GENES BY kWithin\n", 10))
+  rule("-")
+  print(head(hub_tab[order(-hub_tab$kWithin), c("gene_name", "kME", "kWithin_scaled", "degree", "hallmark")], 10),
+        row.names = FALSE)
+  rule("-")
+  cat("GENES PER HALLMARK LABEL\n")
+  rule("-")
+  print(table(hub_tab$hallmark))
+  cat("\n")
+  rule("=")
+  cat("Output files\n")
+  rule("=")
+  for (nm in names(files)) cat(sprintf("%-16s: %s\n", nm, files[[nm]]))
+  invisible(txt_path)
+}
+
+
+### write_community_summary(): text summary of Leiden communities within a module
+### (test.module_communities.R)
+#
+# res_stats : one row per resolution (n_communities_*, modularity_*, stability_ARI, sizes)
+# nodes     : one row per gene with community, kME, kWithin_community, rank_in_community,
+#             hub and hallmark columns
+# params    : named list printed in the PARAMETERS block
+# null_q    : modularity of the shuffled-weight null runs
+# files     : named list of output paths printed at the end
+write_community_summary <- function(txt_path, res_stats, nodes, params, null_q,
+                                    files = list(), top_n = 10) {
+  rule <- function(ch) cat(strrep(ch, 80), "\n", sep = "")
+
+  sink(txt_path)
+  on.exit(sink(), add = TRUE)
+  rule("=")
+  cat("MODULE COMMUNITY SUMMARY (LEIDEN)\n")
+  rule("=")
+  cat(sprintf("%-22s: %s\n", "Date", format(Sys.time(), "%Y-%m-%d %H:%M:%S")))
+  rule("-")
+  cat("PARAMETERS\n")
+  rule("-")
+  for (nm in names(params)) cat(sprintf("%-22s: %s\n", nm, paste(params[[nm]], collapse = ", ")))
+  rule("-")
+  cat("RESOLUTIONS\n")
+  rule("-")
+  out <- as.data.frame(res_stats)
+  num <- sapply(out, is.numeric)
+  out[num] <- lapply(out[num], signif, 3)
+  print(out, row.names = FALSE)
+  cat(sprintf("\nNull modularity (shuffled weights): mean %.4f, max %.4f\n", mean(null_q), max(null_q)))
+  rule("-")
+  cat("COMMUNITIES AT THE CHOSEN RESOLUTION\n")
+  rule("-")
+  print(table(nodes$community))
+  for (cm in sort(unique(nodes$community))) {
+    d <- nodes[nodes$community == cm, ]
+    cat(sprintf("\n--- %s: %d genes, mean kME %.2f, hubs: %s ---\n", cm, nrow(d), mean(d$kME),
+                paste(d$gene_name[d$hub %in% "hub"], collapse = ", ")))
+    cat("Top genes by within-community connectivity:",
+        paste(head(d$gene_name[order(d$rank_in_community)], top_n), collapse = ", "), "\n")
+    cat("Top genes by kME:", paste(head(d$gene_name[order(-d$kME)], top_n), collapse = ", "), "\n")
+    if (!all(is.na(d$hallmark))) {
+      tab <- sort(table(d$hallmark[d$hallmark != "none"]), decreasing = TRUE)
+      cat("Hallmark labels:", if (length(tab)) paste(names(tab), tab, sep = " = ", collapse = "; ") else "none", "\n")
+    }
+  }
+  cat("\n")
+  rule("=")
+  cat("Output files\n")
+  rule("=")
+  for (nm in names(files)) cat(sprintf("%-12s: %s\n", nm, files[[nm]]))
+  invisible(txt_path)
+}
