@@ -8,7 +8,7 @@ non-diabetic (ND) and type 2 diabetic (T2D). Specifically, this project uses the
 - **GEO accession:** GSE221156 (Bandesh et al.)
 - **Source file:** the beta-cell subset downloaded from CELLxGENE as an `.h5ad`
 - **Technology:** 10x Genomics 3' (v2 and v3 chemistry)
-- **Counts:** raw UMI counts from `raw.X`. The authors' normalised `X` is not used.
+- **Counts:** raw UMI counts from `raw.X` and authors normalised counts `X`.
 - **Cells:** beta cells only, with the authors' beta-cell subclusters (`Clusters`)
   and the UMAP from their beta-cell reintegration
 
