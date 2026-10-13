@@ -1,7 +1,7 @@
 # hdWGCNA co-expression network analysis of human beta cells
 
 A 'High definition weighted Gene co-expression network analysis' [(hdWGCNA)](https://www.cell.com/cell-reports-methods/fulltext/S2667-2375(23)00127-3) of human pancreatic beta cells from the [GSE221156](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE221156) single-cell RNA-seq dataset, comparing donors who are
-non-diabetic (ND) and type 2 diabetic (T2D).
+non-diabetic (ND) and type 2 diabetic (T2D). Specifically, this project uses the 'reintegrated transcriptomes of Beta pancreatic islet cells' data (See publication [Bandesh et al. (2026) EMBO J](https://link.springer.com/article/10.1038/s44318-026-00744-w) and available data published on CellxGene ['A pancreatic islet scRNA-seq atlas from 48 non-diabetic, prediabetic and type 2 diabetic individuals of matched demographic and ethnic backgrounds'](https://cellxgene.cziscience.com/collections/58e85c2f-d52e-4c19-8393-b854b84d516e)).
 
 ## Dataset
 
