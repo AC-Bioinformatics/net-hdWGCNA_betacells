@@ -28,7 +28,12 @@ network/
 └── data/                                   # Earlier GSE81608 work, not used here
 ```
 
-## Workflow
+## Analysis Pipeline
+
+### Step 0: Download GSE221156_beta_cellxgene.h5ad `0.download_GSE221156.R`
+
+- Downloads the 'Reintegrated transcriptomes of Beta pancreatic islet cells from
+  CellxGene and saves it to `1.Data` directory
 
 ### Step 1: read the h5ad into Seurat (`1.read_GSE221156.R`)
 
